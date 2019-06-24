@@ -1,10 +1,8 @@
-import {MaterialDocsAppPage} from './app.po';
+import {browser} from 'protractor';
 
 describe('angular-io-v42 App', function() {
-  let page: MaterialDocsAppPage;
-
   beforeEach(() => {
-    page = new MaterialDocsAppPage();
+    browser.get('/');
   });
 
   it('should do something', () => {

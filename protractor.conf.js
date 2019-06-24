@@ -2,7 +2,7 @@
 // https://github.com/angular/protractor/blob/master/docs/referenceConf.js
 
 /*global jasmine */
-const SpecReporter = require('jasmine-spec-reporter');
+const {SpecReporter} = require('jasmine-spec-reporter');
 
 let config = {
   allScriptsTimeout: 11000,
@@ -12,6 +12,7 @@ let config = {
   capabilities: {
     'browserName': 'chrome'
   },
+  directConnect: true,
   baseUrl: 'http://localhost:4200/',
   framework: 'jasmine',
   jasmineNodeOpts: {
@@ -22,7 +23,7 @@ let config = {
   useAllAngular2AppRoots: true,
   beforeLaunch: function() {
     require('ts-node').register({
-      project: 'e2e'
+      project: 'e2e/tsconfig.json'
     });
   },
   onPrepare: function() {
