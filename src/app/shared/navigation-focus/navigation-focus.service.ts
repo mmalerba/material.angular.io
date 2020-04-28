@@ -8,8 +8,8 @@ import {Subscription} from 'rxjs';
 })
 export class NavigationFocusService implements OnDestroy {
   private subscriptions = new Subscription();
-  private navigationFocusRequests: ElementRef[] = [];
-  private skipLinkFocusRequests: ElementRef[] = [];
+  private navigationFocusRequests: HTMLElement[] = [];
+  private skipLinkFocusRequests: HTMLElement[] = [];
   private skipLinkHref = '';
 
   readonly navigationEndEvents = this.router.events
@@ -23,7 +23,7 @@ export class NavigationFocusService implements OnDestroy {
         setTimeout(() => {
           if (this.navigationFocusRequests.length) {
             this.navigationFocusRequests[this.navigationFocusRequests.length - 1]
-              .nativeElement.focus({preventScroll: true});
+              .focus({preventScroll: true});
           }
         }, 100);
       }
@@ -34,27 +34,27 @@ export class NavigationFocusService implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  requestFocusOnNavigation(el: ElementRef) {
+  requestFocusOnNavigation(el: HTMLElement) {
     this.navigationFocusRequests.push(el);
   }
 
-  relinquishFocusOnDestroy(el: ElementRef) {
+  relinquishFocusOnDestroy(el: HTMLElement) {
     this.navigationFocusRequests.splice(this.navigationFocusRequests.indexOf(el), 1);
   }
 
-  requestSkipLinkFocus(el: ElementRef) {
+  requestSkipLinkFocus(el: HTMLElement) {
     this.skipLinkFocusRequests.push(el);
     const baseUrl = this.router.url.split('#')[0];
-    const skipLinKTargetId = el.nativeElement.id;
+    const skipLinKTargetId = el.id;
     this.skipLinkHref = `${baseUrl}#${skipLinKTargetId}`;
   }
 
-  relinquishSkipLinkFocusOnDestroy(el: ElementRef) {
+  relinquishSkipLinkFocusOnDestroy(el: HTMLElement) {
     this.skipLinkFocusRequests.splice(this.skipLinkFocusRequests.indexOf(el), 1);
     if (this.skipLinkFocusRequests.length) {
       const skipLinkFocusTarget = this.skipLinkFocusRequests[this.skipLinkFocusRequests.length - 1];
       const baseUrl = this.router.url.split('#')[0];
-      const skipLinKTargetId = skipLinkFocusTarget.nativeElement.id;
+      const skipLinKTargetId = skipLinkFocusTarget.id;
       this.skipLinkHref = `${baseUrl}#${skipLinKTargetId}`;
     }
   }

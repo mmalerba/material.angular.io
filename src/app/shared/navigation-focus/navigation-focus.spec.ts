@@ -1,76 +1,75 @@
-import {async, inject, TestBed} from '@angular/core/testing';
-import {RouterTestingModule} from '@angular/router/testing';
+import {Component, NgZone} from '@angular/core';
+import {ComponentFixture, fakeAsync, inject, TestBed, tick} from '@angular/core/testing';
 import {Router} from '@angular/router';
-
-import {MATERIAL_DOCS_ROUTES} from '../../routes';
+import {RouterTestingModule} from '@angular/router/testing';
 import {NavigationFocusService} from './navigation-focus.service';
-import {ElementRef} from '@angular/core';
-
 
 describe('Navigation focus service', () => {
   let navigationFocusService: NavigationFocusService;
   let router: Router;
+  let zone: NgZone;
+  let fixture: ComponentFixture<NavigationFocusTest>;
+
+  const navigate = (url: string) => {
+    zone.run(() => router.navigateByUrl(url));
+    tick(100);
+  };
 
   beforeEach(() => {
       TestBed.configureTestingModule({
-        imports: [RouterTestingModule.withRoutes(MATERIAL_DOCS_ROUTES)],
-        providers: [NavigationFocusService]
+        imports: [RouterTestingModule.withRoutes([
+          {path: '', component: RouteTest},
+          {path: 'cdk', component: RouteTest},
+          {path: 'guides', component: RouteTest}
+        ])],
+        providers: [NavigationFocusService],
+        declarations: [NavigationFocusTest, RouteTest],
       });
-      router = TestBed.inject(Router);
+      fixture = TestBed.createComponent(NavigationFocusTest);
     }
   );
 
-  beforeEach(inject([NavigationFocusService], (nfs: NavigationFocusService) => {
+  beforeEach(inject(
+      [NgZone, Router, NavigationFocusService],
+      (_zone: NgZone, _router: Router, nfs: NavigationFocusService) => {
+    zone = _zone;
+    router = _router;
     navigationFocusService = nfs;
   }));
 
-  it('should set skip link href', () => {
-    const div1 = document.createElement('div');
-    div1.id = 'skip-link-target-1';
-    const element1 = new ElementRef(div1);
+  fit('should focus on component then relinquish focus', fakeAsync(() => {
+    const target1 = fixture.nativeElement.querySelector('#target1');
+    const target2 = fixture.nativeElement.querySelector('#target2');
 
-    const div2 = document.createElement('div');
-    div2.id = 'skip-link-target-2';
-    const element2 = new ElementRef(div2);
+    // First navigation event doesn't trigger focus because it represents a hardnav.
+    navigationFocusService.requestFocusOnNavigation(target1);
+    navigationFocusService.requestFocusOnNavigation(target2);
+    navigate('/');
+    expect(document.activeElement).not.toEqual(target1);
+    expect(document.activeElement).not.toEqual(target2);
 
-    navigationFocusService.requestSkipLinkFocus(element1);
-    navigationFocusService.requestSkipLinkFocus(element2);
+    // Most recent requester gets focus on the next nav.
+    navigate('/guides');
+    expect(document.activeElement).toEqual(target2);
 
-    expect(navigationFocusService.getSkipLinkHref()).toEqual('/#skip-link-target-2');
-
-    navigationFocusService.relinquishSkipLinkFocusOnDestroy(element2);
-
-    expect(navigationFocusService.getSkipLinkHref()).toEqual('/#skip-link-target-1');
-  });
-
-  it('should be within component view', () => {
-    const previousUrl = '/components/autocomplete/overview';
-    const newUrl = '/components/autocomplete/overview#simple-autocomplete';
-    expect(navigationFocusService.isNavigationWithinComponentView(previousUrl, newUrl)).toBeTrue();
-  })
-
-  it('should not be within component view', () => {
-    const previousUrl = '/cdk/clipboard/overview';
-    const newUrl = '/cdk/categories';
-    expect(navigationFocusService.isNavigationWithinComponentView(previousUrl, newUrl)).toBeFalse();
-  })
-
-  it('should focus on component then relinquish focus', async(async () => {
-    const div = document.createElement('div');
-    div.id = 'focus-target';
-    const element = new ElementRef(div);
-
-    navigationFocusService.requestFocusOnNavigation(element);
-
-    await router.navigateByUrl('/');
-    expect(document.activeElement).not.toEqual(element.nativeElement);
-
-    await router.navigateByUrl('/guides');
-    expect(document.activeElement).toEqual(element.nativeElement);
-
-    navigationFocusService.relinquishFocusOnDestroy(element);
-
-    await router.navigateByUrl('/cdk');
-    expect(document.activeElement).not.toEqual(element.nativeElement);
+    // Falls back to the focusing the previous requester once the most recent one relinquishes.
+    navigationFocusService.relinquishFocusOnDestroy(target2);
+    navigate('/cdk');
+    expect(document.activeElement).toEqual(target1);
   }))
 });
+
+@Component({
+  selector: 'navigation-focus-test',
+  template: `
+    <button id="target1">Target 1</button>
+    <button id="target2">Target 2</button>
+  `
+})
+class NavigationFocusTest {}
+
+@Component({
+  selector: 'route-test',
+  template: '',
+})
+class RouteTest {}
