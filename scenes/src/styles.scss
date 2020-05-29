@@ -27,7 +27,6 @@ $theme: map_merge($theme, (foreground: $foreground));
 
 @include angular-material-theme($theme);
 
-
 body {
   margin: 0;
   color: red;
